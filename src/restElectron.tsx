@@ -116,7 +116,9 @@ export class RestElectron implements IRest {
             }
             status = 2
             let nonce: number
-            if (addressInfo.pendings.length > 0) {
+            if ( tx.nonce !== undefined) {
+                nonce = Number(tx.nonce)
+            } else if (addressInfo.pendings.length > 0) {
                 nonce = addressInfo.pendings[addressInfo.pendings.length - 1].nonce + 1
             } else {
                 nonce = addressInfo.nonce + 1
@@ -214,19 +216,19 @@ export class RestElectron implements IRest {
         })
     }
 
-    public recoverWallet(Hwallet: IHyconWallet): Promise<string | boolean> {
+    public async recoverWallet(Hwallet: IHyconWallet): Promise<string> {
         if (Hwallet.name === undefined || Hwallet.mnemonic === undefined || Hwallet.language === undefined) {
-            return Promise.resolve(false)
+            return Promise.reject("params")
         }
 
-        if (!this.checkDupleName(Hwallet.name)) {
-            return Promise.resolve(false)
+        if (await this.checkDupleName(Hwallet.name)) {
+            return Promise.reject("name")
         }
 
         const wordlist = getBip39Wordlist(Hwallet.language)
 
         if (!bip39.validateMnemonic(Hwallet.mnemonic, wordlist)) {
-            return Promise.resolve(false)
+            return Promise.reject("mnemonic")
         }
 
         if (Hwallet.password === undefined) { Hwallet.password = "" }
@@ -243,27 +245,33 @@ export class RestElectron implements IRest {
             const cipher = crypto.createCipheriv("aes-256-cbc", key, iv)
             const encryptedData = Buffer.concat([cipher.update(Buffer.from(wallet.privateKey.toString("hex"))), cipher.final()])
             const address = utils.publicKeyToAddress(wallet.publicKey)
+            const addressStr = utils.addressToString(address)
             const store: IStoredWallet = {
                 iv: iv.toString("hex"),
                 data: encryptedData.toString("hex"),
-                address: utils.addressToString(address),
+                address: addressStr,
                 hint: Hwallet.hint,
                 name: Hwallet.name,
             }
-            return new Promise<string | boolean>((resolve, _) => {
+
+            if (await this.checkDupleAddress(addressStr)) {
+                return Promise.reject("address")
+            }
+
+            return new Promise<string>((resolve, reject) => {
                 this.walletsDB.insert(store, (err: Error, doc: IStoredWallet) => {
                     if (err) {
                         console.error(err)
-                        resolve(false)
+                        reject("db")
                     } else {
-                        console.log(`Stored ${doc.address} -> ${JSON.stringify(doc)}`)
+                        // console.log(`Stored ${doc.address} -> ${JSON.stringify(doc)}`)
                         resolve(doc.address)
                     }
                 })
             })
 
         } catch (e) {
-            return Promise.resolve(false)
+            return Promise.reject("bip39")
         }
     }
 
@@ -333,7 +341,7 @@ export class RestElectron implements IRest {
     public async addWalletFile(name: string, password: string, key: string): Promise<boolean> {
         try {
             if (await this.checkDupleName(name)) {
-                return false
+                return Promise.reject("name")
             }
 
             const keyArr = key.split(":")
@@ -354,6 +362,12 @@ export class RestElectron implements IRest {
             const privateKey = this.decryptWallet(password, iv, data)
             const publicKeyBuff = secp256k1.publicKeyCreate(Buffer.from(privateKey.toString(), "hex"))
             const address = utils.publicKeyToAddress(publicKeyBuff)
+            const addressStr = utils.addressToString(address)
+
+            if (await this.checkDupleAddress(addressStr)) {
+                return Promise.reject("address")
+            }
+
             const store: IStoredWallet = {
                 iv,
                 data,
@@ -366,7 +380,7 @@ export class RestElectron implements IRest {
                 this.walletsDB.insert(store, (err: Error, doc: IStoredWallet) => {
                     if (err) {
                         console.error(err)
-                        resolve(false)
+                        return Promise.reject("db")
                     } else {
                         console.log(`Stored ${doc.address} -> ${JSON.stringify(doc)}`)
                         resolve(true)
@@ -375,7 +389,7 @@ export class RestElectron implements IRest {
             })
         } catch (e) {
             console.log(`${e}`)
-            return false
+            return Promise.reject("key")
         }
     }
 
@@ -539,9 +553,9 @@ export class RestElectron implements IRest {
         }
         return Promise.resolve(hyconWallet)
     }
-    public getTOTP(): Promise<{iv: string, data: string}> {
+    public getTOTP(): Promise<{ iv: string, data: string }> {
         return new Promise((resolve, _) => {
-            this.totpDB.find({}, (err: Error, docs: Array<{iv: string, data: string}>) => {
+            this.totpDB.find({}, (err: Error, docs: Array<{ iv: string, data: string }>) => {
                 if (err) {
                     console.error(err)
                     return false
@@ -549,7 +563,7 @@ export class RestElectron implements IRest {
                 if (docs.length === 0) {
                     return false
                 }
-                resolve({iv: docs[0].iv, data: docs[0].data})
+                resolve({ iv: docs[0].iv, data: docs[0].data })
             })
         })
     }
@@ -559,12 +573,12 @@ export class RestElectron implements IRest {
             const key = Buffer.from(utils.blake2bHash(totpPw).buffer)
             const cipher = crypto.createCipheriv("aes-256-cbc", key, iv)
             const encryptedData = Buffer.concat([cipher.update(Buffer.from(secret)), cipher.final()])
-            const store: {iv: string, data: string} = {
+            const store: { iv: string, data: string } = {
                 iv: iv.toString("hex"),
                 data: encryptedData.toString("hex"),
             }
             return new Promise<boolean>((resolve, _) => {
-                this.totpDB.insert(store, (err: Error, doc: {iv: string, data: string}) => {
+                this.totpDB.insert(store, (err: Error, doc: { iv: string, data: string }) => {
                     if (err) {
                         console.error(err)
                         resolve(false)
@@ -685,7 +699,7 @@ export class RestElectron implements IRest {
     }
 
     public possibilityLedger(): Promise<boolean> {
-        return (this.osArch === "x64")? Promise.resolve(true): Promise.resolve(false)
+        return (this.osArch === "x64") ? Promise.resolve(true) : Promise.resolve(false)
     }
 
     private async getWallet(name: string) {
@@ -726,5 +740,18 @@ export class RestElectron implements IRest {
         } catch (e) {
             return false
         }
+    }
+
+    private checkDupleAddress(address: string): Promise<boolean> {
+        return new Promise<boolean>((resolve, _) => {
+            this.walletsDB.count({ address }, (err: Error, exist: number) => {
+                if (err) {
+                    console.error(err)
+                    resolve(true)
+                }
+
+                exist ? resolve(true) : resolve(false)
+            })
+        })
     }
 }

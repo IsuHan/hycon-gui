@@ -31,6 +31,7 @@ export default {
     "alert-invalid-mnemonic": "니모닉 문구, 암호문구 또는 언어가 정확하지 않습니다. 다시 입력해 주세요.",
     "alert-empty-fields": "필수값을 입력하세요.",
     "alert-duplicate-wallet": "중복된 지갑 이름입니다.",
+    "alert-duplicate-address": "중복된 지갑 주소입니다.",
     "title-wallet-info": "지갑 정보 입력",
     "title-receive-mnemonic": "니모닉 문구 수령 및 입력",
     "title-check-mnemonic": "니모닉 문구 확인",
@@ -76,7 +77,7 @@ export default {
     "wallet-address": "주소",
     "wallet-balance": "잔액",
     "wallet-select": "조회하실 지갑을 선택해 주세요.",
-    "ledger-view": "LEDGER 조회",
+    "ledger-view": "Ledger 조회",
     "ledger-wallet": "Ledger 지갑",
 
     "email": "이메일",
