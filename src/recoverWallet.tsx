@@ -6,11 +6,7 @@ import { encodingMnemonic } from "./stringUtil"
 
 export class RecoverWallet extends React.Component<any, any> {
     public mounted: boolean = false
-    public errMsg1: string = `${this.props.language["alert-empty-fields"]}`
-    public errMsg2: string = `${this.props.language["alert-invalid-wallet"]}`
-    public errMsg3: string = `${this.props.language["password-not-matched"]}`
-    public errMsg4: string = `${this.props.language["bip39-not-matched"]}`
-    public pattern1 = /^[a-zA-Z0-9\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uAC00-\uD7AF\uD7B0-\uD7FF]{2,20}$/
+
     constructor(props: any) {
         super(props)
         this.state = {
@@ -75,30 +71,47 @@ export class RecoverWallet extends React.Component<any, any> {
         this.setState({ advanced: event.target.checked })
     }
     public recoverWallet() {
+        const patternWalletName = /^[a-zA-Z0-9\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uAC00-\uD7AF\uD7B0-\uD7FF]{2,20}$/
         if (this.state.name === "") {
-            alert(this.errMsg1)
-        } else if (this.state.name.search(/\s/) !== -1 || !this.pattern1.test(this.state.name)) {
-            alert(this.errMsg2)
-        } else {
-            if (this.state.password1 !== this.state.password2) {
-                alert(this.errMsg3)
-            } else {
-                const mnemonic = encodingMnemonic(this.state.mnemonic)
-                this.state.rest.recoverWallet({
-                    language: this.state.language,
-                    mnemonic,
-                    name: this.state.name,
-                    passphrase: this.state.passphrase1,
-                    password: this.state.password1,
-                }).then((data: string | boolean) => {
-                    if (typeof data !== "string") {
-                        alert(this.errMsg4)
-                    } else {
-                        this.setState({ redirect: true })
-                    }
-                })
-            }
+            alert(this.props.language["alert-empty-fields"])
+            return
         }
+        if (this.state.name.search(/\s/) !== -1 || !patternWalletName.test(this.state.name)) {
+            alert(this.props.language["alert-invalid-wallet"])
+            return
+        }
+        if (this.state.password1 !== this.state.password2) {
+            alert(this.props.language["password-not-matched"])
+            return
+        }
+
+        const mnemonic = encodingMnemonic(this.state.mnemonic)
+        this.state.rest.recoverWallet({
+            language: this.state.language,
+            mnemonic,
+            name: this.state.name,
+            passphrase: this.state.passphrase1,
+            password: this.state.password1,
+        }).then((data: string | boolean) => {
+            this.setState({ redirect: true })
+        }).catch((err: string) => {
+            switch (err) {
+                case "bip39":
+                    alert(this.props.language["bip39-not-matched"])
+                    break
+                case "mnemonic":
+                    alert(this.props.language["alert-invalid-mnemonic"])
+                    break
+                case "name":
+                    alert(this.props.language["alert-duplicate-wallet"])
+                    break
+                case "address":
+                    alert(this.props.language["alert-duplicate-address"])
+                    break
+                default:
+                    alert("unexpected error")
+            }
+        })
     }
     public cancelWallet() {
         this.setState({ redirect: true })
@@ -106,7 +119,7 @@ export class RecoverWallet extends React.Component<any, any> {
 
     public render() {
         if (!this.state.load) {
-            return <div></div>
+            return null
         }
         if (this.state.redirect) {
             return <Redirect to="/wallet" />
@@ -159,7 +172,7 @@ export class RecoverWallet extends React.Component<any, any> {
                                 onKeyPress={(event) => { if (event.key === "Enter") { event.preventDefault(); this.recoverWallet() } }}
                             />
                         </div>)
-                        : (<div></div>)
+                        : null
                     }
                     <br /><br />
                     <Grid container direction={"row"} justify={"center"} alignItems={"center"}>
@@ -177,7 +190,7 @@ export class RecoverWallet extends React.Component<any, any> {
                     <h3 style={{ color: "grey" }}>{this.props.language["advanced-option-tooltip-title"]}</h3>
                     <div className="mdl-dialog__content dialogContent">{this.props.language["advanced-option-tooltip3"]}</div><br />
                     <Grid container direction={"row"} justify={"center"} alignItems={"center"}>
-                    <Button variant="raised" style={{ backgroundColor: "rgb(225, 0, 80)", color: "white", margin: "0 10px" }} onClick={() => { this.setState({ dialog: false }) }}>{this.props.language["button-close"]}</Button>
+                        <Button variant="raised" style={{ backgroundColor: "rgb(225, 0, 80)", color: "white", margin: "0 10px" }} onClick={() => { this.setState({ dialog: false }) }}>{this.props.language["button-close"]}</Button>
                     </Grid>
                 </Dialog>
             </div >

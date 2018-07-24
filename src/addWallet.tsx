@@ -6,13 +6,6 @@ import { encodingMnemonic } from "./stringUtil"
 
 export class AddWallet extends React.Component<any, any> {
     public mounted: boolean = false
-    public errMsg1: string = `${this.props.language["alert-empty-fields"]}`
-    public errMsg2: string = `${this.props.language["alert-invalid-wallet"]}`
-    public errMsg3: string = `${this.props.language["password-not-matched"]}`
-    public errMsg4: string = `${this.props.language["title-check-mnemonic"]}`
-    public errMsg5: string = `${this.props.language["title-check-mnemonic"]}`
-    public errMsg6: string = `${this.props.language["alert-duplicate-wallet"]}`
-    public pattern1 = /^[a-zA-Z0-9\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uAC00-\uD7AF\uD7B0-\uD7FF]{2,20}$/
     constructor(props: any) {
         super(props)
         this.state = {
@@ -105,18 +98,19 @@ export class AddWallet extends React.Component<any, any> {
         }
     }
     public receiveMnemonic() {
+        const patternWalletName = /^[a-zA-Z0-9\u1100-\u11FF\u3130-\u318F\uA960-\uA97F\uAC00-\uD7AF\uD7B0-\uD7FF]{2,20}$/
         if (this.state.name === "") {
-            alert(this.errMsg1)
-        } else if (this.state.name.search(/\s/) !== -1 || !this.pattern1.test(this.state.name)) {
-            alert(this.errMsg2)
+            alert(this.props.language["alert-empty-fields"])
+        } else if (this.state.name.search(/\s/) !== -1 || !patternWalletName.test(this.state.name)) {
+            alert(this.props.language["alert-invalid-wallet"])
         } else {
             if (this.state.password1 !== this.state.password2) {
-                alert(this.errMsg3)
+                alert(this.props.language["password-not-matched"])
             } else {
                 this.state.rest.setLoading(true)
                 this.state.rest.checkDupleName(this.state.name).then((result: boolean) => {
                     if (result) {
-                        alert(this.errMsg6)
+                        alert(this.props.language["alert-duplicate-wallet"])
                     } else {
                         let opt = this.state.selectedOption
                         if (opt === "Chinese - Traditional") {
@@ -133,20 +127,20 @@ export class AddWallet extends React.Component<any, any> {
     }
     public checkConfirmMnemonic() {
         if (this.state.confirmMnemonic === "") {
-            alert(this.errMsg5)
+            alert(this.props.language["title-check-mnemonic"])
         } else {
             const mnemonicString = encodingMnemonic(this.state.mnemonic)
             const confirmMnemonicString = encodingMnemonic(this.state.confirmMnemonic)
             if (this.state.mnemonic === confirmMnemonicString) {
                 this.setState({ activeStep: this.state.activeStep + 1 })
             } else {
-                alert(this.errMsg4)
+                alert(this.props.language["title-check-mnemonic"])
             }
         }
     }
     public createWallet() {
         if (this.state.typedMnemonic === "") {
-            alert(this.errMsg5)
+            alert(this.props.language["title-check-mnemonic"])
         } else {
             const mnemonicString = encodingMnemonic(this.state.mnemonic)
             const typedMnemonicString = encodingMnemonic(this.state.typedMnemonic)
@@ -162,7 +156,7 @@ export class AddWallet extends React.Component<any, any> {
                     this.setState({ walletViewRedirect: true, address: data })
                 })
             } else {
-                alert(this.errMsg4)
+                alert(this.props.language["title-check-mnemonic"])
             }
         }
     }
@@ -179,7 +173,7 @@ export class AddWallet extends React.Component<any, any> {
             return <Redirect to={`/wallet/detail/${this.state.name}`} />
         }
         if (!this.state.load) {
-            return <div></div>
+            return null
         }
         return (
             <div style={{ textAlign: "center", width: "80%", margin: "auto" }}>
@@ -234,8 +228,7 @@ export class AddWallet extends React.Component<any, any> {
                                         onKeyPress={(event) => { if (event.key === "Enter") { event.preventDefault(); this.handleNext() } }}
                                     /><br />
                                 </div>)
-                                : (<div></div>)
-                            }
+                                : null}
                             <br />
                         </div>
                         <div style={{ display: `${this.state.activeStep === 1 ? ("block") : ("none")}` }}>
