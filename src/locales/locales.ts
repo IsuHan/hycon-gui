@@ -10,36 +10,15 @@ import chinese_traditional from "./zh-hk"
 export function getLocale(code: string): IText {
     const locale = code.split("-")
     switch (locale[0]) {
-        case "en":
-            return english
-            break
-        case "ko":
-            return korean
-            break
-        case "zh":
-            if (locale[1] === "cn") {
-                return chinese_simplified
-                break
-            } else {
-                return chinese_traditional
-                break
-            }
-            break
-        case "vi":
-            return vietnamese
-            break
-        case "ru":
-            return russian
-            break
-        case "mn":
-            return mongolian
-            break
-        case "ja":
-            return japanese
-            break
-        default:
-            return english
-            break
+        case "en": return english
+        case "ko": return korean
+        case "zh": return locale[1] === "cn" ?
+            chinese_simplified : chinese_traditional
+        case "vi": return vietnamese
+        case "ru": return russian
+        case "mn": return mongolian
+        case "ja": return japanese
+        default: return english
     }
 }
 export interface IText {
@@ -52,6 +31,7 @@ export interface IText {
     "button-forget": string,
     "button-close": string,
     "button-submit": string,
+    "button-download": string,
 
     "wallet-list": string,
     "load-key-from-file": string,
@@ -74,6 +54,7 @@ export interface IText {
     "alert-invalid-mnemonic": string,
     "alert-empty-fields": string,
     "alert-duplicate-wallet": string,
+    "alert-duplicate-address": string,
     "title-wallet-info": string,
     "title-receive-mnemonic": string,
     "title-check-mnemonic": string,
@@ -94,6 +75,8 @@ export interface IText {
     "bip39-confirm": string,
     "bip39-not-matched": string,
     "bip39-warning": string,
+    "input-placeholder1": string,
+    "input-placeholder2": string,
 
     "wallet-details": string,
     "hycon-address": string,
@@ -119,8 +102,14 @@ export interface IText {
     "wallet-address": string,
     "wallet-balance": string,
     "wallet-select": string,
-    "ledger-view": string,
-    "ledger-wallet": string
+    "hardwarewallet-view": string,
+    "ledger-wallet": string,
+    "bitbox-wallet": string,
+    "alert-delete-wallet": string,
+    "use-hdWallet": string,
+    "hdwallet-type-password": string,
+    "create-hdwallet": string,
+    "recover-hdwallet": string,
 
     "email": string,
     "password": string,
@@ -159,6 +148,9 @@ export interface IText {
     "alert-ledger-connect-failed": string,
     "alert-select-account": string,
     "send-amount": string,
+    "attention-change-tx-title": string,
+    "attention-change-tx": string,
+    "guide-sign-ledger": string,
 
     "recover-wallet": string,
     "title-recover-wallet": string,
@@ -184,4 +176,6 @@ export interface IText {
     "alert-disable-totp-fail": string,
     "transaction-totp": string,
     "alert-invalid-code-password": string,
+
+    "currency": string,
 }

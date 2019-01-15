@@ -3,23 +3,25 @@
 </h1>
 <h4 align="center">Hycon Wallet - Desktop app</h4>
 
+[![Github All Releases](https://img.shields.io/github/downloads/Team-Hycon/hycon-gui/total.svg)](http://www.somsubhra.com/github-release-stats/?username=Team-Hycon&repository=hycon-gui)
 [![Build Status](https://travis-ci.org/Team-Hycon/hycon-gui.svg?branch=master)](https://travis-ci.org/Team-Hycon/hycon-gui)
 
 ## Key Features
 
 * Create and recover wallets
 * Check wallet balance
-* Supports <a href="https://www.ledgerwallet.com/products/ledger-nano-s" target="_blank">Ledger Nano S</a> hardware wallet - *only for 64-bit operating systems*
+* Supports [Ledger Nano S](https://www.ledgerwallet.com/products/ledger-nano-s), [Ledger Blue](https://www.ledgerwallet.com/products/ledger-blue) and [Digital BitBox](https://shiftcrypto.ch) hardware wallets - *only for 64-bit operating systems* 
+* Supports Hierarchical Deterministic key creation and transfer protocol
 * 2 Factor Authentication
-* 8 languages support (English, Korean, Chinese, French, Vietnam, Japan, Mongolian and Russian)
+* 8 languages support (English, Korean, Chinese, French, Vietnamese, Japanese, Mongolian and Russian)
 
 ## Download
 
-You can [download](https://github.com/Team-Hycon/hycon-gui/releases/tag/v1.0.0-beta.0) latest installable version of Hycon Wallet for Windows, macOS and Linux.
+You can [download](https://github.com/Team-Hycon/hycon-gui/releases/tag/v1.1.0) latest installable version of Hycon Wallet for Windows, macOS and Linux.
 
 ## Future Features
 
-* Support for <a href="https://trezor.io" target="_blank">Trezor</a> hardware wallet
+* Support for [Trezor](https://trezor.io) hardware wallet
 * Automatic updates
 * More remote node choices
 * UI/UX changes
@@ -36,7 +38,7 @@ Right away. It doesn't need to sync since it connects to a fully synced remote n
 
 - ***Does it support hardware wallets?***
 
-Yes. Currently it supports <a href="https://www.ledgerwallet.com/products/ledger-nano-s" target="_blank">Ledger Nano S</a> and will add other hardware wallet supports later.
+Yes. Currently it supports [Ledger Nano S](https://www.ledgerwallet.com/products/ledger-nano-s), [Ledger Blue](https://www.ledgerwallet.com/products/ledger-blue) and [Digital BitBox](https://shiftcrypto.ch) and will add other hardware wallet supports later.
 
 - ***Why doesn't it show the button to interact with my hardware wallet?***
 

@@ -1,22 +1,20 @@
 import {
     IBlock,
     IHyconWallet,
-    ILocationDetails,
+    ILogin,
     IMinedInfo,
     IMiner,
     IPeer,
     IResponseError,
     IRest,
     ITxProp,
-    IUser,
     IWalletAddress,
 } from "./rest"
-import { WalletDetail } from "./walletDetail"
 // tslint:disable:no-console
 // tslint:disable:ban-types
 // tslint:disable:object-literal-sort-keys
 export class RestClient implements IRest {
-
+    public readonly isDev: boolean = (process.env.NODE_ENV === "development")
     public apiVersion = "v1"
     public loading: boolean
     public isHyconWallet: boolean
@@ -28,6 +26,29 @@ export class RestClient implements IRest {
     public setLoading(loading: boolean): void {
         this.loading = loading
         this.callback(this.loading)
+    }
+
+    public async login(data: ILogin): Promise<{ response: string } | IResponseError> {
+        const formData = new FormData()
+        formData.append("action", "login")
+        formData.append("login_email", data.email)
+        formData.append("login_pass", data.password)
+        if (data.tfa_token) {
+            formData.append("tfa_token", data.tfa_token)
+        }
+
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        return Promise.resolve(
+            fetch(`https://wallet.hycon.io/ajax.php`, {
+                body: formData,
+                headers,
+                method: "POST",
+            }).then((response) => response.json())
+                .catch((err: Error) => {
+                    console.log(err)
+                }),
+        )
     }
 
     public createNewWallet(meta: IHyconWallet): Promise<IHyconWallet | IResponseError> {
@@ -129,14 +150,19 @@ export class RestClient implements IRest {
                 }),
         )
     }
-    public getAllAccounts(name: string): Promise<{ represent: number, accounts: Array<{ address: string, balance: string }> } | boolean> {
-        return Promise.resolve(
-            fetch(`/api/${this.apiVersion}/getAllAccounts/${name}`)
-                .then((response) => response.json())
-                .catch((err: Error) => {
-                    console.log(err)
-                }),
-        )
+    public getAllAccounts(name: string, password: string, startIndex: number): Promise<Array<{ address: string, balance: string }> | boolean> {
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        headers.append("Content-Type", "application/json")
+        return Promise.resolve(fetch(`/api/${this.apiVersion}/getAllAccounts`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ name, password, startIndex }),
+        })
+            .then((response) => response.json())
+            .catch((err: Error) => {
+                console.log(err)
+            }))
     }
     public getBlock(hash: string): Promise<IBlock | IResponseError> {
         return Promise.resolve(
@@ -168,7 +194,7 @@ export class RestClient implements IRest {
     }
 
     public getMnemonic(lang: string): Promise<string> {
-        // console.log(lang.toLowerCase())
+        if (this.isDev) { console.log(lang.toLowerCase()) }
         return Promise.resolve(
             fetch(`/api/${this.apiVersion}/getMnemonic/${lang.toLowerCase()}`)
                 .then((response) => response.json())
@@ -213,7 +239,6 @@ export class RestClient implements IRest {
                     }),
             )
         }
-
     }
 
     public recoverWallet(Hwallet: IHyconWallet): Promise<string | boolean> {
@@ -232,7 +257,7 @@ export class RestClient implements IRest {
             }))
     }
     public sendTx(tx: { name: string, password: string, address: string, amount: string, minerFee: string, nonce: number }, queueTx?: Function): Promise<{ res: boolean, case?: number }> {
-        console.log(tx.name)
+        if (this.isDev) { console.log(tx.name) }
         const headers = new Headers()
         headers.append("Accept", "application/json")
         headers.append("Content-Type", "application/json")
@@ -411,9 +436,9 @@ export class RestClient implements IRest {
             }))
     }
 
-    public getLedgerWallet(startIndex: number): Promise<IHyconWallet[] | number> {
+    public getLedgerWallet(startIndex: number, count: number): Promise<IHyconWallet[] | number> {
         return Promise.resolve(
-            fetch(`/api/${this.apiVersion}/getLedgerWallet/${startIndex}`)
+            fetch(`/api/${this.apiVersion}/getLedgerWallet/${startIndex}/${count}`)
                 .then((response) => response.json())
                 .catch((err: Error) => {
                     console.log(err)
@@ -421,15 +446,19 @@ export class RestClient implements IRest {
         )
     }
 
-    public sendTxWithLedger(index: number, from: string, to: string, amount: string, fee: string, queueTx?: Function): Promise<{ res: boolean, case?: number }> {
-        return Promise.resolve(
-            fetch(`/api/${this.apiVersion}/sendTxWithLedger/${from}/${to}/${amount}/${fee}`)
-                .then((response) => response.json())
-                .catch((err: Error) => {
-                    console.log(`Error when sendTxWithLedger`)
-                    console.log(err)
-                }),
-        )
+    public sendTxWithLedger(index: number, from: string, to: string, amount: string, fee: string, txNonce?: number, queueTx?: Function): Promise<{ res: boolean, case?: number }> {
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        headers.append("Content-Type", "application/json")
+        return Promise.resolve(fetch(`/api/${this.apiVersion}/sendTxWithLedger`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ index, name, from, to, amount, fee, txNonce }),
+        })
+            .then((response) => response.json())
+            .catch((err: Error) => {
+                console.log(err)
+            }))
     }
 
     public possibilityLedger(): Promise<boolean> {
@@ -443,12 +472,21 @@ export class RestClient implements IRest {
         )
     }
 
+    public getMarketCap(): Promise<{ totalSupply: string, circulatingSupply: string }> {
+        return Promise.resolve(
+            fetch(`/api/${this.apiVersion}/getMarketCap`)
+                .then((response) => response.json())
+                .catch((err: Error) => {
+                    console.log(`Error when getMarketCap`)
+                    console.log(err)
+                }),
+        )
+    }
     public getTOTP(): Promise<boolean> {
         return Promise.resolve(
             fetch(`/api/${this.apiVersion}/getTOTP`)
                 .then((response) => response.json())
                 .catch((err: Error) => {
-                    console.log(`Error when getTOTP`)
                     console.log(err)
                 }),
         )
@@ -458,7 +496,6 @@ export class RestClient implements IRest {
             fetch(`/api/${this.apiVersion}/saveTOTP/${secret}/${totpPw}`)
                 .then((response) => response.json())
                 .catch((err: Error) => {
-                    console.log(`Error when saveTOTP`)
                     console.log(err)
                 }),
         )
@@ -468,7 +505,6 @@ export class RestClient implements IRest {
             fetch(`/api/${this.apiVersion}/deleteTOTP/${totpPw}`)
                 .then((response) => response.json())
                 .catch((err: Error) => {
-                    console.log(`Error when deleteTOTP`)
                     console.log(err)
                 }),
         )
@@ -478,9 +514,196 @@ export class RestClient implements IRest {
             fetch(`/api/${this.apiVersion}/verifyTOTP/${token}/${totpPw}/${secret}`)
                 .then((response) => response.json())
                 .catch((err: Error) => {
-                    console.log(`Error when verifyTOTP`)
                     console.log(err)
                 }),
         )
+    }
+
+    public getHDWallet(name: string, password: string, index: number, count: number): Promise<IHyconWallet[] | IResponseError> {
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        headers.append("Content-Type", "application/json")
+        return Promise.resolve(fetch(`/api/${this.apiVersion}/getHDWallet`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ name, password, index, count }),
+        })
+            .then((response) => response.json())
+            .catch((err: Error) => {
+                console.log(err)
+            }))
+    }
+
+    public async sendTxWithHDWallet(tx: { name: string, password: string, address: string, amount: string, minerFee: string, nonce?: number }, index: number, queueTx?: Function): Promise<{ res: boolean, case?: number }> {
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        headers.append("Content-Type", "application/json")
+        return Promise.resolve(fetch(`/api/${this.apiVersion}/sendTxWithHDWallet`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ name: tx.name, password: tx.password, address: tx.address, amount: tx.amount, minerFee: tx.minerFee, nonce: tx.nonce, index }),
+        })
+            .then((response) => response.json())
+            .catch((err: Error) => {
+                console.log(err)
+            }))
+    }
+
+    public generateHDWallet(Hwallet: IHyconWallet): Promise<string> {
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        headers.append("Content-Type", "application/json")
+        return Promise.resolve(fetch(`/api/${this.apiVersion}/generateHDWallet`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(Hwallet),
+        })
+            .then((response) => response.json())
+            .catch((err: Error) => {
+                console.log(err)
+            }))
+    }
+
+    public recoverHDWallet(Hwallet: IHyconWallet): Promise<string | boolean> {
+        Hwallet.language = Hwallet.language.toLowerCase()
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        headers.append("Content-Type", "application/json")
+        return Promise.resolve(fetch(`/api/${this.apiVersion}/recoverHDWallet`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(Hwallet),
+        })
+            .then((response) => response.json())
+            .catch((err: Error) => {
+                console.log(err)
+            }))
+    }
+
+    public checkPasswordBitbox(): Promise<boolean | number> {
+        return Promise.resolve(
+            fetch(`/api/${this.apiVersion}/checkPasswordBitbox`)
+                .then((response) => response.json())
+                .catch((err: Error) => {
+                    console.log(`Error when checkPasswordBitbox`)
+                    console.log(err)
+                }),
+        )
+    }
+
+    public checkWalletBitbox(password: string): Promise<boolean | number | { error: number, remain_attemp: string }> {
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        headers.append("Content-Type", "application/json")
+        return Promise.resolve(fetch(`/api/${this.apiVersion}/checkWalletBitbox`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ password }),
+        })
+            .then((response) => response.json())
+            .catch((err: Error) => {
+                console.log(err)
+            }))
+    }
+
+    public getBitboxWallet(password: string, startIndex: number, count: number): Promise<IHyconWallet[] | number> {
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        headers.append("Content-Type", "application/json")
+        return Promise.resolve(fetch(`/api/${this.apiVersion}/getBitboxWallet`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ password, startIndex, count }),
+        })
+            .then((response) => response.json())
+            .catch((err: Error) => {
+                console.log(err)
+            }))
+    }
+
+    public sendTxWithBitbox(tx: { from: string, password: string, address: string, amount: string, minerFee: string, nonce?: number }, index: number, queueTx?: Function): Promise<{ res: boolean, case?: (number | { error: number, remain_attemp: string }) }> {
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        headers.append("Content-Type", "application/json")
+        return Promise.resolve(fetch(`/api/${this.apiVersion}/sendTxWithBitbox`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ from: tx.from, password: tx.password, address: tx.address, amount: tx.amount, minerFee: tx.minerFee, nonce: tx.nonce, index }),
+        })
+            .then((response) => response.json())
+            .catch((err: Error) => {
+                console.log(err)
+            }))
+    }
+
+    public setBitboxPassword(password: string): Promise<number | boolean> {
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        headers.append("Content-Type", "application/json")
+        return Promise.resolve(fetch(`/api/${this.apiVersion}/setBitboxPassword`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ password }),
+        })
+            .then((response) => response.json())
+            .catch((err: Error) => {
+                console.log(err)
+            }))
+    }
+
+    public createBitboxWallet(name: string, password: string): Promise<boolean | number> {
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        headers.append("Content-Type", "application/json")
+        return Promise.resolve(fetch(`/api/${this.apiVersion}/createBitboxWallet`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ name, password }),
+        })
+            .then((response) => response.json())
+            .catch((err: Error) => {
+                console.log(err)
+            }))
+    }
+
+    public async updateBitboxPassword(originalPwd: string, newPwd: string): Promise<boolean | number | { error: number, remain_attemp: string }> {
+        const headers = new Headers()
+        headers.append("Accept", "application/json")
+        headers.append("Content-Type", "application/json")
+        return Promise.resolve(fetch(`/api/${this.apiVersion}/updateBitboxPassword`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ originalPwd, newPwd }),
+        })
+            .then((response) => response.json())
+            .catch((err: Error) => {
+                console.log(err)
+            }))
+    }
+
+    public isUncleBlock(blockHash: string): Promise<boolean | IResponseError> {
+        return Promise.resolve(
+            fetch(`/api/${this.apiVersion}/isUncleBlock/${blockHash}`)
+                .then((response) => response.json())
+                .catch((err: Error) => {
+                    console.log(`Fail to isUncleBlock`)
+                    console.log(err)
+                }),
+        )
+    }
+
+    public getMiningReward(minerAddress: string, blockHash: string): Promise<string | IResponseError> {
+        return Promise.resolve(
+            fetch(`/api/${this.apiVersion}/getMiningReward/${minerAddress}/${blockHash}`)
+                .then((response) => response.json())
+                .catch((err: Error) => {
+                    console.log(`Fail to getMiningReward`)
+                    console.log(err)
+                }),
+        )
+    }
+
+    public getPrice(currency: string): Promise<number> {
+        throw new Error("getPrice: Not Implemented")
     }
 }
